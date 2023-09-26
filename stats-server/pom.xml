@@ -8,13 +8,12 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>stats-server</artifactId>
     <packaging>pom</packaging>
-    <name>Archetype - stats-server</name>
-    <url>http://maven.apache.org</url>
     <modules>
-        <module>client</module>
-        <module>dto</module>
         <module>service</module>
+        <module>dto</module>
+        <module>client</module>
     </modules>
+
 
     <build>
         <pluginManagement>
