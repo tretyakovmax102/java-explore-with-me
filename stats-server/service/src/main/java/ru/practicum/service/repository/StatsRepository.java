@@ -14,31 +14,30 @@ import java.util.List;
 public interface StatsRepository extends JpaRepository<Hit, Long> {
 
     @Query("SELECT new ru.practicum.dto.StatsDto(a.app, a.uri,  count(a)) " +
-            "FROM Hit a WHERE a.uri IN :uris  " +
-            "AND  a.created > :start AND a.created < :end " +
-            "GROUP BY a.app, a.uri " +
-            "ORDER BY count(a) DESC ")
-    List<StatsDto> findViewStatisticsWithUris(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("uris") List<String> uris);
-
-    @Query("SELECT new ru.practicum.dto.StatsDto(a.app, a.uri,  count(DISTINCT a.ip)) " +
-            "FROM Hit a WHERE a.uri IN :uris  " +
-            "AND  a.created > :start AND a.created < :end " +
-            "GROUP BY a.app, a.uri " +
-            "ORDER BY count(DISTINCT a.ip) DESC")
-    List<StatsDto> findViewStatisticsWithUrisAndIpIsUnique(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, List<String> uris);
-
-
-    @Query("SELECT new ru.practicum.dto.StatsDto(a.app, a.uri,  count(a)) " +
             "FROM Hit a " +
             "WHERE a.created > :start AND a.created < :end " +
             "GROUP BY a.app, a.uri " +
             "ORDER BY count(DISTINCT a.ip) DESC")
-    List<StatsDto> findViewStatisticsWithoutUris(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<StatsDto> getViewStatisticsWithoutUris(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     @Query("SELECT new ru.practicum.dto.StatsDto(a.app, a.uri,  count(DISTINCT a.ip))" +
             "FROM Hit a " +
             "WHERE a.created BETWEEN :start AND :end " +
             "GROUP BY a.app, a.uri " +
             "ORDER BY count(a.ip) DESC ")
-    List<StatsDto> findViewStatisticsWithoutUrisAndIsIpUnique(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<StatsDto> getViewStatisticsWithoutUrisAndIsIpUnique(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT new ru.practicum.dto.StatsDto(a.app, a.uri,  count(a)) " +
+            "FROM Hit a WHERE a.uri IN :uris  " +
+            "AND  a.created > :start AND a.created < :end " +
+            "GROUP BY a.app, a.uri " +
+            "ORDER BY count(a) DESC ")
+    List<StatsDto> getViewStatisticsWithUris(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("uris") List<String> uris);
+
+    @Query("SELECT new ru.practicum.dto.StatsDto(a.app, a.uri,  count(DISTINCT a.ip)) " +
+            "FROM Hit a WHERE a.uri IN :uris  " +
+            "AND  a.created > :start AND a.created < :end " +
+            "GROUP BY a.app, a.uri " +
+            "ORDER BY count(DISTINCT a.ip) DESC")
+    List<StatsDto> getViewStatisticsWithUrisAndIpIsUnique(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, List<String> uris);
 }

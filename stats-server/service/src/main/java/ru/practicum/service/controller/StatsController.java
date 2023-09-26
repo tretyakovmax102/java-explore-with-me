@@ -20,9 +20,16 @@ import java.util.List;
 public class StatsController {
     private final StatsService statsService;
 
+    @PostMapping("/hit")
+    public ResponseEntity<Object> addHit(@RequestBody @Valid HitDto hitDto) {
+        log.debug("POST request to /hit with HitDto = {}", hitDto);
+        statsService.createHit(hitDto);
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
     @GetMapping("/stats")
     @ResponseStatus(HttpStatus.OK)
-    public List<StatsDto> getStatistics(
+    public List<StatsDto> getStats(
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
             @RequestParam(required = false) List<String> uris,
@@ -30,14 +37,6 @@ public class StatsController {
     ) {
         log.debug("GET request to /stats with parameters: start = {}, end = {}, uris = {}, unique = {}",
                 start, end, uris, unique);
-        return statsService.getStatistic(start, end, uris, unique);
+        return statsService.getStats(start, end, uris, unique);
     }
-
-    @PostMapping("/hit")
-    public ResponseEntity<Object> createHit(@RequestBody @Valid HitDto hitDto) {
-        log.debug("POST request to /hit with HitDto = {}", hitDto);
-        statsService.createHit(hitDto);
-        return new ResponseEntity<>(HttpStatus.CREATED);
-    }
-
 }

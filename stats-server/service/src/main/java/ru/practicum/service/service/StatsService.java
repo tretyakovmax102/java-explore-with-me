@@ -15,18 +15,23 @@ import java.util.List;
 public class StatsService {
     private final StatsRepository statsRepository;
 
+    public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
+        if (uris == null || uris.isEmpty()) {
+            if (unique) {
+                return statsRepository.getViewStatisticsWithoutUrisAndIsIpUnique(start, end);
+            } else {
+                return statsRepository.getViewStatisticsWithoutUris(start, end);
+            }
+        } else {
+            if (unique) {
+                return statsRepository.getViewStatisticsWithUrisAndIpIsUnique(start, end, uris);
+            } else {
+                return statsRepository.getViewStatisticsWithUris(start, end, uris);
+            }
+        }
+    }
+
     public void createHit(HitDto hitDto) {
         statsRepository.save(StatsMapper.toDto(hitDto));
     }
-
-    public List<StatsDto> getStatistic(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
-        if (uris == null || uris.isEmpty())
-            return unique ?
-                    statsRepository.findViewStatisticsWithoutUrisAndIsIpUnique(start, end) :
-                    statsRepository.findViewStatisticsWithoutUris(start, end);
-        return unique ?
-                statsRepository.findViewStatisticsWithUrisAndIpIsUnique(start, end, uris) :
-                statsRepository.findViewStatisticsWithUris(start, end, uris);
-    }
-
 }
