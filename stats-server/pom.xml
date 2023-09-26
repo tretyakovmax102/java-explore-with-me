@@ -11,9 +11,9 @@
     <name>Archetype - stats-server</name>
     <url>http://maven.apache.org</url>
     <modules>
-        <module>service</module>
-        <module>dto</module>
         <module>client</module>
+        <module>dto</module>
+        <module>service</module>
     </modules>
 
     <build>
