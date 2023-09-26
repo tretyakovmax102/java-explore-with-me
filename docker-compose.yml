@@ -5,7 +5,7 @@ services:
     image: explore-stats-server-image
     container_name: explore-stats-server
     ports:
-      - "9090:9090"
+      - "9090:8080"
     depends_on:
       - stats-db
     environment:
