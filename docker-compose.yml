@@ -18,7 +18,7 @@ services:
       - /var/lib/postgresql/data/
     container_name: stats_db
     ports:
-      - "9091:5432"
+      - "9092:5432"
     environment:
       - POSTGRES_DB=stats-db
       - POSTGRES_USER=root
