@@ -20,6 +20,19 @@ services:
     ports:
       - "9092:5432"
     environment:
-      - POSTGRES_DB=statistic-explore
+      - POSTGRES_DB=stats-db
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=root
+
+  ewm-service:
+    build: ./ewm-main
+    image: ewm-main
+    container_name: ewm-main-container
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ewm-db
+
+    ewm-db:
+      image: postgres:14-alpine
+      container_name: ewm-db
