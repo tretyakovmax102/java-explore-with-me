@@ -6,12 +6,12 @@ import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "stats")
+@Entity
+@Table(name = "hits")
 public class Hit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

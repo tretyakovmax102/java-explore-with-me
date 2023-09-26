@@ -20,13 +20,6 @@ import java.util.List;
 public class StatsController {
     private final StatsService statsService;
 
-    @PostMapping("/hit")
-    public ResponseEntity<Object> createHit(@RequestBody @Valid HitDto hitDto) {
-        log.debug("POST request to /hit with HitDto = {}", hitDto);
-        statsService.createHit(hitDto);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-
     @GetMapping("/stats")
     @ResponseStatus(HttpStatus.OK)
     public List<StatsDto> getStatistics(
@@ -39,4 +32,12 @@ public class StatsController {
                 start, end, uris, unique);
         return statsService.getStatistic(start, end, uris, unique);
     }
+
+    @PostMapping("/hit")
+    public ResponseEntity<Object> createHit(@RequestBody @Valid HitDto hitDto) {
+        log.debug("POST request to /hit with HitDto = {}", hitDto);
+        statsService.createHit(hitDto);
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
 }
