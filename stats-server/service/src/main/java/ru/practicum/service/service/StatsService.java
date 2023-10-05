@@ -1,7 +1,9 @@
 package ru.practicum.service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.dto.StatsDto;
 import ru.practicum.service.model.StatsMapper;
 import ru.practicum.dto.HitDto;
@@ -16,6 +18,9 @@ public class StatsService {
     private final StatsRepository statsRepository;
 
     public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
+        if (end.isBefore(start)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "end.isBefore(start)");
+        }
         if (uris == null || uris.isEmpty()) {
             if (unique) {
                 return statsRepository.getViewStatisticsWithoutUrisAndIsIpUnique(start, end);
