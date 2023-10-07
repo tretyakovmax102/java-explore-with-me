@@ -18,7 +18,7 @@ public class Client {
     public Client(@Value("${statistic.url}") String url) {
         this.url = url;
         this.restTemplate = new RestTemplateBuilder()
-                .uriTemplateHandler(new DefaultUriBuilderFactory(url))
+                .uriTemplateHandler(new DefaultUriBuilderFactory(this.url))
                 .build();
     }
 

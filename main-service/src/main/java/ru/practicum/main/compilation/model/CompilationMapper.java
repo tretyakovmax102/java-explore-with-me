@@ -10,16 +10,18 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 @Component
-public abstract class CompilationMapper {
+public interface CompilationMapper {
 
     @Mapping(target = "events", ignore = true)
-    public abstract Compilation toCompilation(NewCompilationDto dto);
+    Compilation toCompilation(NewCompilationDto dto);
 
-    public abstract CompilationDto toCompilationDto(Compilation compilation);
+    CompilationDto toCompilationDto(Compilation compilation);
 
-    public abstract List<CompilationDto> toCompilationDtos(List<Compilation> categories);
+    List<CompilationDto> toCompilationDtos(List<Compilation> categories);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "events", ignore = true)
-    public abstract void updateCompilation(@MappingTarget Compilation compilation, UpdateCompilationRequest dto);
+    default void updateCompilation(@MappingTarget Compilation compilation, UpdateCompilationRequest dto) {
+    }
+
 }

@@ -47,11 +47,12 @@ public class CategoryService {
     }
 
     public void deleteCategory(Integer id) {
-        if (eventService.findFirstByCategoryId(id) == null)
+        if (eventService.findFirstByCategoryId(id) == null) {
             categoryRepository.delete(categoryRepository.findById(id).orElseThrow(
                     () -> new NotFoundException(String.format("not found category with id = " + id))));
-        else
+        } else {
             throw new ConflictException("category include event!");
+        }
     }
 
 }

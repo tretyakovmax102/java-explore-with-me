@@ -10,9 +10,7 @@ import ru.practicum.dto.HitDto;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.category.repository.CategoryRepository;
 import ru.practicum.main.event.dto.*;
-import ru.practicum.main.event.model.Event;
-import ru.practicum.main.event.model.EventMapper;
-import ru.practicum.main.event.model.State;
+import ru.practicum.main.event.model.*;
 import ru.practicum.main.event.repository.EventRepository;
 import ru.practicum.main.exception.BadRequestException;
 import ru.practicum.main.exception.ConflictException;
@@ -30,15 +28,6 @@ import ru.practicum.main.user.service.UserService;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-
-import static ru.practicum.main.event.model.State.PENDING;
-import static ru.practicum.main.event.model.State.PUBLISHED;
-import static ru.practicum.main.event.model.StateActionAdmin.PUBLISH_EVENT;
-import static ru.practicum.main.event.model.StateActionAdmin.REJECT_EVENT;
-import static ru.practicum.main.event.model.StateActionUser.CANCEL_REVIEW;
-import static ru.practicum.main.event.model.StateActionUser.SEND_TO_REVIEW;
-import static ru.practicum.main.request.model.Status.CONFIRMED;
-import static ru.practicum.main.request.model.Status.REJECTED;
 
 @Service
 @RequiredArgsConstructor
@@ -71,7 +60,7 @@ public class EventService {
         }
         toSave.setInitiator(user);
         toSave.setCreatedOn(LocalDateTime.now());
-        toSave.setState(PENDING);
+        toSave.setState(State.PENDING);
         toSave.setConfirmedRequests(0);
         if (createEventDto.getPaid() == null) toSave.setPaid(false);
         if (createEventDto.getParticipantLimit() == null) toSave.setParticipantLimit(0);
@@ -86,13 +75,12 @@ public class EventService {
     }
 
     public EventDto changeEvent(Integer userId, Integer eventId, UpdateEventUserRequest updateEventUserRequest) {
-        if (updateEventUserRequest.getEventDate() != null) {
-            if (LocalDateTime.now().plusHours(1).isAfter(updateEventUserRequest.getEventDate())) {
-                throw new ForbiddenException("date error");
-            }
+        if (updateEventUserRequest.getEventDate() != null &&
+                LocalDateTime.now().plusHours(1).isAfter(updateEventUserRequest.getEventDate())) {
+            throw new ForbiddenException("date error");
         }
         Event event = eventRepository.findById(eventId).orElseThrow(NotFoundException::new);
-        if (event.getState() == PUBLISHED) {
+        if (event.getState() == State.PUBLISHED) {
             throw new ConflictException("state = published");
         }
         if (!event.getInitiator().getId().equals(userId)) {
@@ -104,9 +92,9 @@ public class EventService {
                     .orElseThrow(NotFoundException::new);
             event.setCategory(category);
         }
-        if (updateEventUserRequest.getStateAction() == SEND_TO_REVIEW)
-            event.setState(PENDING);
-        if (updateEventUserRequest.getStateAction() == CANCEL_REVIEW)
+        if (updateEventUserRequest.getStateAction() == StateActionUser.SEND_TO_REVIEW)
+            event.setState(State.PENDING);
+        if (updateEventUserRequest.getStateAction() == StateActionUser.CANCEL_REVIEW)
             event.setState(State.CANCELED);
         Event savedEvent = eventRepository.save(event);
         return eventMapper.toEventFullDto(savedEvent);
@@ -131,7 +119,7 @@ public class EventService {
         if (event.getConfirmedRequests() != null && event.getParticipantLimit() == 0 || !event.getRequestModeration())
             throw new BadRequestException("eventRequest cannot be patched");
 
-        if (requestRepository.existsParticipationRequestByIdInAndStatus(eventRequestStatusUpdateRequest.getRequestIds(), CONFIRMED))
+        if (requestRepository.existsParticipationRequestByIdInAndStatus(eventRequestStatusUpdateRequest.getRequestIds(), Status.CONFIRMED))
             throw new ConflictException("event status is PENDING!");
 
         if (event.getConfirmedRequests() != null && event.getConfirmedRequests().equals(event.getParticipantLimit()))
@@ -139,12 +127,12 @@ public class EventService {
 
         List<RequestEvent> requests = requestRepository.findAllById(eventRequestStatusUpdateRequest.getRequestIds());
         EventRequestStatusUpdateResult eventRequestStatusUpdateResult = new EventRequestStatusUpdateResult();
-        if (eventRequestStatusUpdateRequest.getStatus() == REJECTED) {
-            List<RequestDtoEvent> requestDtoEvents = setRequestStatus(requests, REJECTED);
+        if (eventRequestStatusUpdateRequest.getStatus() == Status.REJECTED) {
+            List<RequestDtoEvent> requestDtoEvents = setRequestStatus(requests, Status.REJECTED);
             eventRequestStatusUpdateResult.setRejectedRequests(requestDtoEvents);
             event.setConfirmedRequests(event.getConfirmedRequests() - requests.size());
         } else {
-            List<RequestDtoEvent> requestDtoEvents = setRequestStatus(requests, CONFIRMED);
+            List<RequestDtoEvent> requestDtoEvents = setRequestStatus(requests, Status.CONFIRMED);
             eventRequestStatusUpdateResult.setConfirmedRequests(requestDtoEvents);
             event.setConfirmedRequests(event.getConfirmedRequests() + requests.size());
         }
@@ -196,34 +184,46 @@ public class EventService {
         return eventMapper.toEventFullDtos(events);
     }
 
-    public EventDto patchEvent(Integer eventId, UpdateEventAdminRequest updateEventAdminRequest) {
-        if (updateEventAdminRequest != null) {
-            if (updateEventAdminRequest.getEventDate() != null
-                    && LocalDateTime.now().plusHours(1).isAfter(updateEventAdminRequest.getEventDate()))
-                    throw new ForbiddenException("date error");
-
-            Event event = eventRepository.findById(eventId).orElseThrow(NotFoundException::new);
-            if (updateEventAdminRequest.getStateAction() == PUBLISH_EVENT
-                    && (event.getState() == PUBLISHED || event.getState() == State.CANCELED)) {
-                throw new ConflictException("");
-            }
-            if (updateEventAdminRequest.getStateAction() == REJECT_EVENT && event.getState() == PUBLISHED) {
-                throw new ConflictException("");
-            }
-            eventMapper.updateEvent(event, updateEventAdminRequest);
-            if (updateEventAdminRequest.getCategory() != null) {
-                Category category = categoryRepository.findById(updateEventAdminRequest.getCategory())
-                        .orElseThrow(NotFoundException::new);
-                event.setCategory(category);
-            }
-            if (updateEventAdminRequest.getStateAction() == PUBLISH_EVENT) event.setState(PUBLISHED);
-            if (updateEventAdminRequest.getStateAction() == REJECT_EVENT) event.setState(State.CANCELED);
-            Event savedEvent = eventRepository.save(event);
-            return eventMapper.toEventFullDto(savedEvent);
+    private void checkEventDate(UpdateEventAdminRequest updateEventAdminRequest) {
+        if (updateEventAdminRequest.getEventDate() != null
+                && LocalDateTime.now().plusHours(1).isAfter(updateEventAdminRequest.getEventDate())) {
+            throw new ForbiddenException("date error");
         }
+    }
+
+    private void checkEventStatus(Integer eventId, UpdateEventAdminRequest updateEventAdminRequest) {
+        Event event = eventRepository.findById(eventId).orElseThrow(NotFoundException::new);
+        if (updateEventAdminRequest.getStateAction() == StateActionAdmin.PUBLISH_EVENT
+                && (event.getState() == State.PUBLISHED || event.getState() == State.CANCELED)) {
+            throw new ConflictException("");
+        }
+        if (updateEventAdminRequest.getStateAction() == StateActionAdmin.REJECT_EVENT && event.getState() == State.PUBLISHED) {
+            throw new ConflictException("");
+        }
+        eventMapper.updateEvent(event, updateEventAdminRequest);
+        if (updateEventAdminRequest.getCategory() != null) {
+            Category category = categoryRepository.findById(updateEventAdminRequest.getCategory())
+                    .orElseThrow(NotFoundException::new);
+            event.setCategory(category);
+        }
+    }
+
+    public EventDto patchEvent(Integer eventId, UpdateEventAdminRequest updateEventAdminRequest) {
+        checkEventDate(updateEventAdminRequest);
+        checkEventStatus(eventId, updateEventAdminRequest);
+
         Event event = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("e"));
-        if (event.getState() == PUBLISHED) throw new ConflictException("event state is PUBLISHED!");
-        return eventMapper.toEventFullDto(event);
+        if (event.getState() == State.PUBLISHED) {
+            throw new ConflictException("event state is PUBLISHED!");
+        }
+        if (updateEventAdminRequest.getStateAction() == StateActionAdmin.PUBLISH_EVENT) {
+            event.setState(State.PUBLISHED);
+        }
+        if (updateEventAdminRequest.getStateAction() == StateActionAdmin.REJECT_EVENT) {
+            event.setState(State.CANCELED);
+        }
+        Event savedEvent = eventRepository.save(event);
+        return eventMapper.toEventFullDto(savedEvent);
     }
 
     public List<EventShortDto> getEvents(
@@ -232,7 +232,6 @@ public class EventService {
             Boolean paid,
             LocalDateTime rangeStart,
             LocalDateTime rangeEnd,
-            Boolean onlyAvailable,
             String sort,
             Integer from,
             Integer size,
@@ -259,7 +258,7 @@ public class EventService {
     }
 
     public EventDto getEvent(Integer eventId, String ip) {
-        Event event = eventRepository.findByIdAndStateIn(eventId, List.of(PUBLISHED)).orElseThrow(NotFoundException::new);
+        Event event = eventRepository.findByIdAndStateIn(eventId, List.of(State.PUBLISHED)).orElseThrow(NotFoundException::new);
         HitDto endpointHitDto = HitDto.builder().app("ewm-main-service").uri("/events/" + eventId)
                 .timestamp(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)).ip(ip).build();
         if (event.getViews() == null) event.setViews(1L);

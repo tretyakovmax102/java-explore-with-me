@@ -1,10 +1,12 @@
 package ru.practicum.main.request.model;
 
+import lombok.experimental.UtilityClass;
 import ru.practicum.main.request.dto.RequestDtoEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@UtilityClass
 public class RequestMapper {
 
     public static RequestDtoEvent toRequestEvent(RequestEvent requestEvent) {
