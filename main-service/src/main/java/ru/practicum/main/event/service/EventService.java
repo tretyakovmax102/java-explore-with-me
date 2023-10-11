@@ -9,6 +9,8 @@ import ru.practicum.client.Client;
 import ru.practicum.dto.HitDto;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.category.repository.CategoryRepository;
+import ru.practicum.main.comment.model.CommentMapper;
+import ru.practicum.main.comment.repository.CommentRepository;
 import ru.practicum.main.event.dto.*;
 import ru.practicum.main.event.model.*;
 import ru.practicum.main.event.repository.EventRepository;
@@ -40,6 +42,7 @@ public class EventService {
     UserService userService;
     EventMapper eventMapper;
     Client statsClient;
+    CommentRepository commentRepository;
 
     public List<EventShortDto> getEvents(Integer userId, Integer from, Integer size) {
         List<Event> events = eventRepository.findAllByInitiator_Id(userId, PageRequest.of(from, size))
@@ -62,16 +65,24 @@ public class EventService {
         toSave.setCreatedOn(LocalDateTime.now());
         toSave.setState(State.PENDING);
         toSave.setConfirmedRequests(0);
-        if (createEventDto.getPaid() == null) toSave.setPaid(false);
-        if (createEventDto.getParticipantLimit() == null) toSave.setParticipantLimit(0);
-        if (createEventDto.getRequestModeration() == null) toSave.setRequestModeration(true);
+        if (createEventDto.getPaid() == null){
+            toSave.setPaid(false);
+        }
+        if (createEventDto.getParticipantLimit() == null){
+            toSave.setParticipantLimit(0);
+        }
+        if (createEventDto.getRequestModeration() == null){
+            toSave.setRequestModeration(true);
+        }
         eventRepository.save(toSave);
         return eventMapper.toEventFullDto(toSave);
     }
 
     public EventDto getEvent(Integer userId, Integer eventId) {
-        Event event = eventRepository.findByIdAndInitiator_Id(eventId, userId).orElseThrow(NotFoundException::new);
-        return eventMapper.toEventFullDto(event);
+        EventDto event = eventMapper.toEventFullDto(eventRepository.findByIdAndInitiator_Id(eventId, userId)
+                .orElseThrow(NotFoundException::new));
+        event.setComments(CommentMapper.commentToDto(commentRepository.getAllByEventId(eventId)));
+        return event;
     }
 
     public EventDto changeEvent(Integer userId, Integer eventId, UpdateEventUserRequest updateEventUserRequest) {
@@ -84,7 +95,7 @@ public class EventService {
             throw new ConflictException("state = published");
         }
         if (!event.getInitiator().getId().equals(userId)) {
-            throw new ForbiddenException("player isnt initiator");
+            throw new ForbiddenException("player isn't initiator");
         }
         eventMapper.updateEvent(event, updateEventUserRequest);
         if (updateEventUserRequest.getCategory() != null) {
@@ -92,10 +103,12 @@ public class EventService {
                     .orElseThrow(NotFoundException::new);
             event.setCategory(category);
         }
-        if (updateEventUserRequest.getStateAction() == StateActionUser.SEND_TO_REVIEW)
+        if (updateEventUserRequest.getStateAction() == StateActionUser.SEND_TO_REVIEW) {
             event.setState(State.PENDING);
-        if (updateEventUserRequest.getStateAction() == StateActionUser.CANCEL_REVIEW)
+        }
+        if (updateEventUserRequest.getStateAction() == StateActionUser.CANCEL_REVIEW) {
             event.setState(State.CANCELED);
+        }
         Event savedEvent = eventRepository.save(event);
         return eventMapper.toEventFullDto(savedEvent);
     }
@@ -116,15 +129,16 @@ public class EventService {
             Integer eventId,
             EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
         Event event = eventRepository.findByIdAndInitiator_Id(eventId, userId).orElseThrow(() -> new NotFoundException("event not found"));
-        if (event.getConfirmedRequests() != null && event.getParticipantLimit() == 0 || !event.getRequestModeration())
+        if (event.getConfirmedRequests() != null && event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
             throw new BadRequestException("eventRequest cannot be patched");
-
-        if (requestRepository.existsParticipationRequestByIdInAndStatus(eventRequestStatusUpdateRequest.getRequestIds(), Status.CONFIRMED))
+        }
+        if (requestRepository.existsParticipationRequestByIdInAndStatus
+                (eventRequestStatusUpdateRequest.getRequestIds(), Status.CONFIRMED)) {
             throw new ConflictException("event status is PENDING!");
-
-        if (event.getConfirmedRequests() != null && event.getConfirmedRequests().equals(event.getParticipantLimit()))
+        }
+        if (event.getConfirmedRequests() != null && event.getConfirmedRequests().equals(event.getParticipantLimit())) {
             throw new ConflictException("eventRequest cannot be patched");
-
+        }
         List<RequestEvent> requests = requestRepository.findAllById(eventRequestStatusUpdateRequest.getRequestIds());
         EventRequestStatusUpdateResult eventRequestStatusUpdateResult = new EventRequestStatusUpdateResult();
         if (eventRequestStatusUpdateRequest.getStatus() == Status.REJECTED) {
@@ -169,9 +183,9 @@ public class EventService {
         rangeStart = rangeStart != null ? rangeStart : LocalDateTime.now();
         rangeEnd = rangeEnd != null ? rangeEnd : rangeStart.plusYears(1);
 
-        if (rangeEnd.isBefore(rangeStart))
+        if (rangeEnd.isBefore(rangeStart)) {
             throw new BadRequestException("end is before start!");
-
+        }
         if (users != null && states != null && categories != null) {
             events = eventRepository
                     .findAllByInitiator_IdInAndStateInAndCategory_IdInAndEventDateBeforeAndEventDateAfter(
@@ -241,9 +255,9 @@ public class EventService {
         rangeStart = rangeStart != null ? rangeStart : LocalDateTime.now();
         rangeEnd = rangeEnd != null ? rangeEnd : rangeStart.plusYears(1);
 
-        if (rangeEnd.isBefore(rangeStart))
+        if (rangeEnd.isBefore(rangeStart)) {
             throw new BadRequestException("end is before start!");
-
+        }
         if (text != null && paid != null && sort != null && categories != null) {
             events = eventRepository.findAllByAnnotationContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory_IdInAndPaidIsAndEventDateBeforeAndEventDateAfter(
                             text, text, categories, paid, rangeEnd, rangeStart, PageRequest.of(from, size)).getContent();
@@ -261,10 +275,15 @@ public class EventService {
         Event event = eventRepository.findByIdAndStateIn(eventId, List.of(State.PUBLISHED)).orElseThrow(NotFoundException::new);
         HitDto endpointHitDto = HitDto.builder().app("ewm-main-service").uri("/events/" + eventId)
                 .timestamp(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)).ip(ip).build();
-        if (event.getViews() == null) event.setViews(1L);
-        else event.setViews(event.getViews() + 1);
+        if (event.getViews() == null) {
+            event.setViews(1L);
+        } else {
+            event.setViews(event.getViews() + 1);
         statsClient.createHit(endpointHitDto);
-        return eventMapper.toEventFullDto(event);
+        }
+        EventDto eventDto = eventMapper.toEventFullDto(event);
+        eventDto.setComments(CommentMapper.commentToDto(commentRepository.getAllByEventId(eventId)));
+        return eventDto;
     }
 
     public  EventDto findFirstByCategoryId(Integer catId) {

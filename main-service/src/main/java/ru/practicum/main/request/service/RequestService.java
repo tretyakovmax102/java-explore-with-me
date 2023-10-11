@@ -31,7 +31,6 @@ import static ru.practicum.main.request.model.Status.CONFIRMED;
 public class RequestService {
 
     RequestRepository requestRepository;
-    EventService eventRepository;
     UserService userService;
     EventService eventService;
 
@@ -45,7 +44,7 @@ public class RequestService {
         if (requestRepository.existsParticipationRequestByRequester_idAndEvent_Id(userId, eventId)) {
             throw new ConflictException("request");
         }
-        Event event = eventRepository.findById(eventId);
+        Event event = eventService.findById(eventId);
         if (event.getConfirmedRequests() != null && event.getParticipantLimit() != 0
                 && event.getConfirmedRequests().equals(event.getParticipantLimit())) {
             throw new ConflictException("limit or request confirmed");

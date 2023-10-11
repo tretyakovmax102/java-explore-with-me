@@ -4,8 +4,10 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.main.comment.service.CommentService;
 import ru.practicum.main.event.dto.EventDto;
 import ru.practicum.main.event.dto.UpdateEventAdminRequest;
 import ru.practicum.main.event.model.State;
@@ -25,6 +27,7 @@ import java.util.List;
 public class AdminEventController {
 
     EventService eventService;
+    CommentService commentService;
 
     @GetMapping
     public List<EventDto> getEvents(
@@ -43,5 +46,11 @@ public class AdminEventController {
     public EventDto patchEvent(
             @PathVariable Integer id, @Valid @RequestBody(required = false) UpdateEventAdminRequest updateEventAdminRequest) {
         return eventService.patchEvent(id, updateEventAdminRequest);
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteComment(@PathVariable Integer commentId) {
+        commentService.deleteCommentByAdmin(commentId);
     }
 }
