@@ -3,7 +3,7 @@ package ru.practicum.main.comment.model;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.practicum.main.comment.dto.CommentDto;
-import ru.practicum.main.comment.dto.NewCommentDto;
+import ru.practicum.main.comment.dto.InputCommentDto;
 import ru.practicum.main.event.model.Event;
 import ru.practicum.main.user.model.User;
 
@@ -22,7 +22,7 @@ public class CommentMapper {
                 comment.getEvent().getId(),
                 comment.getText(),
                 comment.getCreated(),
-                comment.getEdited()
+                comment.getUpdated()
         );
     }
 
@@ -32,7 +32,7 @@ public class CommentMapper {
                 .collect(Collectors.toList());
     }
 
-    public static Comment commentFromCreateDto(NewCommentDto commentDto, User commentator, Event event) {
+    public static Comment commentFromCreateDto(InputCommentDto commentDto, User commentator, Event event) {
         Comment comment = new Comment();
         comment.setText(commentDto.getText());
         comment.setEvent(event);

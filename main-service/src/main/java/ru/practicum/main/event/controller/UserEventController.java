@@ -6,7 +6,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.comment.dto.CommentDto;
-import ru.practicum.main.comment.dto.NewCommentDto;
+import ru.practicum.main.comment.dto.InputCommentDto;
 import ru.practicum.main.comment.service.CommentService;
 import ru.practicum.main.event.dto.*;
 import ru.practicum.main.event.service.EventService;
@@ -70,13 +70,13 @@ public class UserEventController {
     @PostMapping("/{eventId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
     public CommentDto createComment(@PathVariable Integer eventId, @PathVariable Integer userId,
-                                    @RequestBody @Valid NewCommentDto commentInputDto) {
+                                    @RequestBody @Valid InputCommentDto commentInputDto) {
         return commentService.createComment(eventId, userId, commentInputDto);
     }
 
     @PatchMapping("/{eventId}/comments/{commentId}")
     public CommentDto updateComment(@PathVariable Integer userId, @PathVariable Integer commentId,
-                                    @RequestBody @Valid NewCommentDto commentInputDto) {
+                                    @RequestBody @Valid InputCommentDto commentInputDto) {
         return commentService.updateComment(userId, commentId, commentInputDto);
     }
 

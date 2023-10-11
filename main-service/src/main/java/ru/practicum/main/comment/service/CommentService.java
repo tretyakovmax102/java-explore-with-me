@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.comment.dto.CommentDto;
-import ru.practicum.main.comment.dto.NewCommentDto;
+import ru.practicum.main.comment.dto.InputCommentDto;
 import ru.practicum.main.comment.model.Comment;
 import ru.practicum.main.comment.model.CommentMapper;
 import ru.practicum.main.comment.repository.CommentRepository;
@@ -32,10 +32,10 @@ public class CommentService  {
     private final RequestService requestService;
 
     public List<CommentDto> getComments(Integer eventId) {
-        return CommentMapper.commentToDto(commentRepository.getAllByEventId(eventId));
+        return CommentMapper.commentToDto(commentRepository.findAllByEventId(eventId));
     }
 
-    public CommentDto createComment(Integer eventId, Integer userId, NewCommentDto inputCommentDto) {
+    public CommentDto createComment(Integer eventId, Integer userId, InputCommentDto inputCommentDto) {
         User user = UserMapper.userFromDto(userService.getUser(userId));
         Event event = eventService.findById(eventId);
         if (event.getState() != State.PUBLISHED)
@@ -45,14 +45,14 @@ public class CommentService  {
                 commentRepository.save(CommentMapper.commentFromCreateDto(inputCommentDto, user, event)));
     }
 
-    public CommentDto updateComment(Integer userId, Integer commentId, NewCommentDto inputCommentDto) {
+    public CommentDto updateComment(Integer userId, Integer commentId, InputCommentDto inputCommentDto) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ConflictException("comment with id = " + commentId + "not found"));
         if (!Objects.equals(comment.getCommentator().getId(), userId))
             throw  new ConflictException("someone else's comment cannot be edited!");
 
         comment.setText(inputCommentDto.getText());
-        comment.setEdited(LocalDateTime.now());
+        comment.setUpdated(LocalDateTime.now());
         return CommentMapper.commentToDto(commentRepository.save(comment));
     }
 

@@ -31,6 +31,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static ru.practicum.main.event.model.State.PUBLISHED;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -81,7 +83,7 @@ public class EventService {
     public EventDto getEvent(Integer userId, Integer eventId) {
         EventDto event = eventMapper.toEventFullDto(eventRepository.findByIdAndInitiator_Id(eventId, userId)
                 .orElseThrow(NotFoundException::new));
-        event.setComments(CommentMapper.commentToDto(commentRepository.getAllByEventId(eventId)));
+        event.setComments(CommentMapper.commentToDto(commentRepository.findAllByEventId(eventId)));
         return event;
     }
 
@@ -272,17 +274,17 @@ public class EventService {
     }
 
     public EventDto getEvent(Integer eventId, String ip) {
-        Event event = eventRepository.findByIdAndStateIn(eventId, List.of(State.PUBLISHED)).orElseThrow(NotFoundException::new);
+        Event event = eventRepository.findByIdAndStateIn(eventId, List.of(PUBLISHED)).orElseThrow(NotFoundException::new);
         HitDto endpointHitDto = HitDto.builder().app("ewm-main-service").uri("/events/" + eventId)
                 .timestamp(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)).ip(ip).build();
-        if (event.getViews() == null) {
+        if (event.getViews() == null){
             event.setViews(1L);
         } else {
             event.setViews(event.getViews() + 1);
-        statsClient.createHit(endpointHitDto);
         }
+        statsClient.createHit(endpointHitDto);
         EventDto eventDto = eventMapper.toEventFullDto(event);
-        eventDto.setComments(CommentMapper.commentToDto(commentRepository.getAllByEventId(eventId)));
+        eventDto.setComments(CommentMapper.commentToDto(commentRepository.findAllByEventId(eventId)));
         return eventDto;
     }
 

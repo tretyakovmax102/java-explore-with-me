@@ -10,7 +10,7 @@ import javax.validation.constraints.Size;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class NewCommentDto {
+public class InputCommentDto {
     @NotBlank
     @Size(min = 3, max = 2000,message = "Text length should be min = 3, max = 2000")
     private String text;

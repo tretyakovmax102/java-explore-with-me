@@ -24,5 +24,5 @@ public class Comment {
     private Event event;
     private String text;
     private LocalDateTime created;
-    private LocalDateTime edited;
+    private LocalDateTime updated;
 }
